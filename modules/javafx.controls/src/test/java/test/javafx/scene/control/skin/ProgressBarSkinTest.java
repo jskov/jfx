@@ -34,6 +34,7 @@ import org.junit.Test;
 import com.sun.javafx.tk.Toolkit;
 
 import static org.junit.Assert.*;
+import static test.utils.GcTester.assertCollectable;
 
 import javafx.beans.value.ObservableValue;
 import javafx.scene.Scene;
@@ -113,25 +114,8 @@ public class ProgressBarSkinTest {
         progressbar.setSkin(new ProgressBarSkin(progressbar));
         weakSkinRef = new WeakReference<>(progressbar.getSkin());
         progressbar.setSkin(null);
-        attemptGC(10);
-        assertNull("skin must be gc'ed", weakSkinRef.get());
-    }
-
-    private void attemptGC(int n) {
-        // Attempt gc n times
-        for (int i = 0; i < n; i++) {
-            System.gc();
-            System.runFinalization();
-
-            if (weakSkinRef.get() == null) {
-                break;
-            }
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {
-               System.err.println("InterruptedException occurred during Thread.sleep()");
-            }
-        }
+        
+        assertCollectable("skin must be gc'ed", weakSkinRef);
     }
 
     @Test public void maxWidthTracksPreferred() {

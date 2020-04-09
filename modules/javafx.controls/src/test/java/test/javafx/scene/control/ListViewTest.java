@@ -28,6 +28,7 @@ package test.javafx.scene.control;
 import com.sun.javafx.scene.control.VirtualScrollBar;
 import com.sun.javafx.scene.control.behavior.ListCellBehavior;
 import com.sun.javafx.tk.Toolkit;
+
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -81,6 +82,7 @@ import test.com.sun.javafx.scene.control.infrastructure.StageLoader;
 import test.com.sun.javafx.scene.control.infrastructure.VirtualFlowTestUtils;
 import test.com.sun.javafx.scene.control.test.Person;
 import test.com.sun.javafx.scene.control.test.RT_22463_Person;
+import test.utils.GcTester;
 
 public class ListViewTest {
     private ListView<String> listView;
@@ -1981,8 +1983,7 @@ public class ListViewTest {
     public void testListViewLeak() {
         ObservableList<String> items = FXCollections.observableArrayList();
         WeakReference<ListView<String>> listViewRef = new WeakReference<>(new ListView<>(items));
-        attemptGC(listViewRef, 10);
-        assertNull("ListView is not GCed.", listViewRef.get());
+        GcTester.assertCollectable("ListView is not GCed.", listViewRef);
     }
 
     @Test
@@ -1991,23 +1992,6 @@ public class ListViewTest {
         ObservableList<String> items = FXCollections.observableArrayList(itemRef.get());
         ListView<String> listView = new ListView<>(items);
         items.clear();
-        attemptGC(itemRef, 10);
-        assertNull("ListView item is not GCed.", itemRef.get());
-    }
-
-    private void attemptGC(WeakReference<? extends Object> weakRef, int n) {
-        for (int i = 0; i < n; i++) {
-            System.gc();
-            System.runFinalization();
-
-            if (weakRef.get() == null) {
-                break;
-            }
-            try {
-                Thread.sleep(50);
-            } catch (InterruptedException e) {
-                fail("InterruptedException occurred during Thread.sleep()");
-            }
-        }
+        GcTester.assertCollectable("ListView item is not GCed.", itemRef);
     }
 }

@@ -40,6 +40,7 @@ import static org.junit.Assert.fail;
 import javafx.scene.control.SelectionModel;
 import javafx.scene.control.Skin;
 import test.com.sun.javafx.scene.control.infrastructure.StageLoader;
+import test.utils.GcTester;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
@@ -1165,26 +1166,9 @@ public class TabPaneTest {
         WeakReference<Tab> weakTab = new WeakReference<>(new Tab("NonChildTab"));
         tabPane.getSelectionModel().select(weakTab.get());
         tk.firePulse();
-        attemptGC(10, weakTab);
+        GcTester.attemptGC(weakTab);
         tk.firePulse();
         assertNull(weakTab.get());
-    }
-
-    private void attemptGC(int n, WeakReference<?> weakRef) {
-        // Attempt gc n times
-        for (int i = 0; i < n; i++) {
-            System.gc();
-            System.runFinalization();
-
-            if (weakRef.get() == null) {
-                break;
-            }
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {
-                fail("InterruptedException occurred during Thread.sleep()");
-            }
-        }
     }
 
     // Test for JDK-8157690
@@ -1242,7 +1226,6 @@ public class TabPaneTest {
         tk.firePulse();
         tabPane.setSelectionModel(TabPaneShim.getTabPaneSelectionModel(tabPane));
         tk.firePulse();
-        attemptGC(10, weakSMRef);
-        assertNull(weakSMRef.get());
+        GcTester.assertCollectable(weakSMRef);
     }
 }

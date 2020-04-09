@@ -28,8 +28,6 @@ package test.javafx.scene.control;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import java.lang.ref.Reference;
-import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import javafx.geometry.Pos;
@@ -37,6 +35,7 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
+import test.utils.GcTester;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
@@ -101,12 +100,12 @@ public class ProgressIndicatorTest {
 
     final static int TOTAL_PROGRESS_INDICATORS = 10;
     private ArrayList<WeakReference<ProgressIndicator>> weakRefArr =
-                                      new ArrayList(TOTAL_PROGRESS_INDICATORS);
+                                      new ArrayList<>(TOTAL_PROGRESS_INDICATORS);
 
     @Test public void memoryLeakTest_JDK_8189265_stage() {
         testProgressIndicatorObjectsInStage();
 
-        attemptGC(10);
+        GcTester.attemptGC(this::expectedObjectsRemaining);
 
         assertEquals(TOTAL_PROGRESS_INDICATORS, getCleanedUpObjectCount());
     }
@@ -114,7 +113,7 @@ public class ProgressIndicatorTest {
     @Test public void memoryLeakTest_JDK_8189265_alert() {
         testProgressIndicatorObjectsInAlert();
 
-        attemptGC(10);
+        GcTester.attemptGC(this::expectedObjectsRemaining);
 
         assertEquals(TOTAL_PROGRESS_INDICATORS, getCleanedUpObjectCount());
     }
@@ -122,7 +121,7 @@ public class ProgressIndicatorTest {
     @Test public void memoryLeakTest_JDK_8189265_changingStage() {
         testProgressIndicatorObjectsInChangingStage();
 
-        attemptGC(10);
+        GcTester.attemptGC(this::expectedObjectsRemaining);
 
         assertEquals(TOTAL_PROGRESS_INDICATORS, getCleanedUpObjectCount());
     }
@@ -203,23 +202,10 @@ public class ProgressIndicatorTest {
         tk.firePulse();
     }
 
-    private void attemptGC(int n) {
-        // Attempt gc n times
-        for (int i = 0; i < n; i++) {
-            System.gc();
-            System.runFinalization();
-
-            if (getCleanedUpObjectCount() == TOTAL_PROGRESS_INDICATORS) {
-                break;
-            }
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {
-               System.err.println("InterruptedException occurred during Thread.sleep()");
-            }
-        }
+    private boolean expectedObjectsRemaining() {
+        return getCleanedUpObjectCount() == TOTAL_PROGRESS_INDICATORS;
     }
-
+    
     private int getCleanedUpObjectCount() {
         int count = 0;
         for (WeakReference<ProgressIndicator> ref : weakRefArr) {
